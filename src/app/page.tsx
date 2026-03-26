@@ -8,6 +8,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 import { TestConfig, Metrics, LogEntry } from "@/types";
+import Image from "next/image";
 
 const initialMetrics: Metrics = {
   totalRequests: 0,
@@ -69,7 +70,7 @@ export default function Home() {
 
   const elapsedSeconds = startTime ? Math.floor((currentTime - startTime) / 1000) : 0;
   const timeLeft = Math.max(0, totalDurationSeconds - elapsedSeconds);
-  const progressPercent = totalDurationSeconds > 0 
+  const progressPercent = totalDurationSeconds > 0
     ? Math.min(100, Math.max(0, (elapsedSeconds / totalDurationSeconds) * 100))
     : 0;
 
@@ -141,9 +142,9 @@ export default function Home() {
         const duration = config.useStages
           ? config.stages.reduce((acc, s) => acc + parseK6Duration(s.duration), 0)
           : parseK6Duration(config.duration);
-        
+
         setTotalDurationSeconds(duration);
-        
+
         const payload = {
           url: config.url,
           method: config.method,
@@ -228,13 +229,16 @@ export default function Home() {
     <div className="container mx-auto px-4 py-8 md:px-6 lg:px-8 max-w-7xl space-y-4">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b">
         <div className="flex items-center gap-3 sm:gap-4">
-          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-xl sm:text-2xl shadow-lg ring-1 ring-primary/20">
-            🚀
-          </div>
+          <Image
+            src="/logo-k6.png"
+            alt="LoadLab Logo"
+            width={40}
+            height={40}
+          />
           <div>
             <h1 className="text-3xl font-extrabold tracking-tight">LoadLab</h1>
-            <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
-              K6 Load Testing Engine
+            <p className="text-sm text-muted-foreground font-medium tracking-wider">
+              Visual load testing with K6
             </p>
           </div>
         </div>
