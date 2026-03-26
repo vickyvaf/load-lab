@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import TestConfigPanel from "@/components/TestConfigPanel";
 import StatisticsPanel from "@/components/StatisticsPanel";
 import LogsPanel from "@/components/LogsPanel";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { cn } from "@/lib/utils";
 
 import { TestConfig, Metrics, LogEntry } from "@/types";
@@ -251,6 +252,7 @@ export default function Home() {
               {isRunning ? "Test Running" : "Idle"}
             </span>
           </div>
+          <ThemeToggle />
         </div>
       </header>
 
