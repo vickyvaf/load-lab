@@ -1,7 +1,10 @@
-'use client';
-
 import { useRef, useEffect, useCallback } from 'react';
 import type { LogEntry } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Terminal, Trash2, Copy, FileText } from 'lucide-react';
 
 interface LogsPanelProps {
   logs: LogEntry[];
@@ -9,12 +12,14 @@ interface LogsPanelProps {
 }
 
 export default function LogsPanel({ logs, onClear }: LogsPanelProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when new logs arrive
   useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    if (scrollRef.current) {
+      const scrollContainer = scrollRef.current.querySelector('[data-radix-scroll-area-viewport]');
+      if (scrollContainer) {
+        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      }
     }
   }, [logs]);
 
@@ -28,46 +33,67 @@ export default function LogsPanel({ logs, onClear }: LogsPanelProps) {
   const formatTimestamp = (ts: string) => {
     try {
       const d = new Date(ts);
-      return d.toLocaleTimeString('en-US', { hour12: false });
+      return d.toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     } catch {
       return ts;
     }
   };
 
   return (
-    <section className="glass-card logs-panel animate-in" id="logs-panel">
-      <div className="logs-header">
-        <div className="section-title" style={{ marginBottom: 0 }}>
-          <span className="section-title-icon">📋</span>
-          Logs
+    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+      <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4">
+        <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <Terminal className="w-4 h-4" />
+          Live Output Logs
+        </CardTitle>
+        <div className="flex items-center gap-2 w-full sm:w-auto">
+          <Button variant="ghost" size="sm" onClick={onClear} className="flex-1 sm:flex-none h-8 text-xs gap-1.5 border sm:border-none">
+            <Trash2 className="w-3.5 h-3.5" />
+            Clear
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleCopy} className="flex-1 sm:flex-none h-8 text-xs gap-1.5 border sm:border-none">
+            <Copy className="w-3.5 h-3.5" />
+            Copy
+          </Button>
         </div>
-        <div className="logs-actions">
-          <button className="btn btn-ghost btn-sm" onClick={onClear} id="clear-logs-btn">
-            🗑️ Clear
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={handleCopy} id="copy-logs-btn">
-            📋 Copy
-          </button>
-        </div>
-      </div>
-      <div className="logs-container" ref={containerRef}>
-        {logs.length === 0 ? (
-          <div className="logs-empty">
-            <div className="logs-empty-icon">📝</div>
-            <div>No logs yet. Start a test to see output here.</div>
-          </div>
-        ) : (
-          logs.map((log, i) => (
-            <div key={i} className={`log-line ${log.level}`}>
-              <span className={`log-badge ${log.level}`}>
-                {log.level === 'info' ? 'INFO' : log.level === 'warn' ? 'WARN' : 'ERR'}
-              </span>
-              <span className="log-timestamp">{formatTimestamp(log.timestamp)}</span>
-              <span className="log-message">{log.message}</span>
+      </CardHeader>
+      <CardContent>
+        <ScrollArea className="h-[350px] w-full rounded-md border bg-black/5 p-4" ref={scrollRef}>
+          {logs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-[300px] text-muted-foreground gap-3 opacity-50">
+              <FileText className="w-10 h-10" />
+              <p className="text-sm font-medium">No logs recorded yet</p>
             </div>
-          ))
-        )}
-      </div>
-    </section>
+          ) : (
+            <div className="space-y-1.5 font-mono text-[13px] leading-relaxed">
+              {logs.map((log, i) => (
+                <div key={i} className="flex gap-3 group">
+                  <Badge 
+                    variant="outline" 
+                    className={
+                      log.level === 'info' ? 'text-blue-500 border-blue-500/20 bg-blue-500/5' :
+                      log.level === 'warn' ? 'text-yellow-500 border-yellow-500/20 bg-yellow-500/5' :
+                      'text-red-500 border-red-500/20 bg-red-500/5'
+                    }
+                  >
+                    {log.level.toUpperCase()}
+                  </Badge>
+                  <span className="text-muted-foreground/60 shrink-0 select-none">
+                    {formatTimestamp(log.timestamp)}
+                  </span>
+                  <span className={
+                    log.level === 'error' ? 'text-red-400' : 
+                    log.level === 'warn' ? 'text-yellow-400' : 
+                    'text-foreground/90'
+                  }>
+                    {log.message}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 }

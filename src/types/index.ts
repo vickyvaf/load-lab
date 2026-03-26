@@ -5,7 +5,7 @@ export interface TestConfig {
   duration: string;
   headers: { key: string; value: string }[];
   body: string;
-  stages: { duration: string; target: number }[];
+  stages: { duration: string; target: number | string }[];
   thresholds: { key: string; value: string }[];
   useStages: boolean;
 }

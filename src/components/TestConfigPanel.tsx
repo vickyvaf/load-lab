@@ -1,7 +1,18 @@
-'use client';
-
 import { useState, useCallback } from 'react';
 import type { TestConfig } from '@/types';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Switch } from '@/components/ui/switch';
+import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Settings2, Play, Square, Plus, Trash2, Globe, Users, Clock, Braces, Layers, Target, FileText } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface TestConfigPanelProps {
   onStartTest: (config: TestConfig) => void;
@@ -22,11 +33,6 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning }: 
     useStages: false,
   });
 
-  const [showHeaders, setShowHeaders] = useState(false);
-  const [showBody, setShowBody] = useState(false);
-  const [showStages, setShowStages] = useState(false);
-  const [showThresholds, setShowThresholds] = useState(false);
-
   const updateField = useCallback(<K extends keyof TestConfig>(field: K, value: TestConfig[K]) => {
     setConfig(prev => ({ ...prev, [field]: value }));
   }, []);
@@ -37,287 +43,365 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning }: 
   };
 
   // Header handlers
-  const addHeader = () => updateField('headers', [...config.headers, { key: '', value: '' }]);
-  const removeHeader = (i: number) => updateField('headers', config.headers.filter((_, idx) => idx !== i));
+  const addHeader = () => setConfig(prev => ({ ...prev, headers: [...prev.headers, { key: '', value: '' }] }));
+  const removeHeader = (i: number) => setConfig(prev => ({ ...prev, headers: prev.headers.filter((_, idx) => idx !== i) }));
   const updateHeader = (i: number, field: 'key' | 'value', val: string) => {
-    const h = [...config.headers];
-    h[i] = { ...h[i], [field]: val };
-    updateField('headers', h);
+    setConfig(prev => {
+      const h = [...prev.headers];
+      h[i] = { ...h[i], [field]: val };
+      return { ...prev, headers: h };
+    });
   };
 
   // Stage handlers
-  const addStage = () => updateField('stages', [...config.stages, { duration: '10s', target: 10 }]);
-  const removeStage = (i: number) => updateField('stages', config.stages.filter((_, idx) => idx !== i));
+  const addStage = () => setConfig(prev => ({ ...prev, stages: [...prev.stages, { duration: '10s', target: 10 }] }));
+  const removeStage = (i: number) => setConfig(prev => ({ ...prev, stages: prev.stages.filter((_, idx) => idx !== i) }));
   const updateStage = (i: number, field: 'duration' | 'target', val: string | number) => {
-    const s = [...config.stages];
-    s[i] = { ...s[i], [field]: val };
-    updateField('stages', s);
+    setConfig(prev => {
+      const s = [...prev.stages];
+      s[i] = { ...s[i], [field]: val };
+      return { ...prev, stages: s };
+    });
   };
 
   // Threshold handlers
-  const addThreshold = () => updateField('thresholds', [...config.thresholds, { key: '', value: '' }]);
-  const removeThreshold = (i: number) => updateField('thresholds', config.thresholds.filter((_, idx) => idx !== i));
+  const addThreshold = () => setConfig(prev => ({ ...prev, thresholds: [...prev.thresholds, { key: '', value: '' }] }));
+  const removeThreshold = (i: number) => setConfig(prev => ({ ...prev, thresholds: prev.thresholds.filter((_, idx) => idx !== i) }));
   const updateThreshold = (i: number, field: 'key' | 'value', val: string) => {
-    const t = [...config.thresholds];
-    t[i] = { ...t[i], [field]: val };
-    updateField('thresholds', t);
+    setConfig(prev => {
+      const t = [...prev.thresholds];
+      t[i] = { ...t[i], [field]: val };
+      return { ...prev, thresholds: t };
+    });
   };
 
   return (
-    <section className="glass-card config-panel animate-in" id="config-panel">
-      <div className="section-title">
-        <span className="section-title-icon">⚙️</span>
-        Test Configuration
-      </div>
-
-      {/* URL + Method */}
-      <div className="config-main-row">
-        <div className="url-input-group">
-          <div className="form-group" style={{ width: '140px', flexShrink: 0 }}>
-            <label className="form-label" htmlFor="method-select">Method</label>
-            <select
-              id="method-select"
-              className="select-field"
+    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+      <CardHeader className="pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+              <Settings2 className="w-4 h-4" />
+              Test Configuration
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Configure parameters for your K6 load test scenario.
+            </CardDescription>
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button
+              size="sm"
+              onClick={handleSubmit}
+              disabled={isRunning || !config.url.trim() || !config.vus || Number(config.vus) <= 0}
+              className="flex-1 sm:flex-none gap-2 px-4 shadow-sm"
+            >
+              <Play className="w-4 h-4 fill-current" />
+              <span>Start Test</span>
+            </Button>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={onStopTest}
+              disabled={!isRunning}
+              className="flex-1 sm:flex-none gap-2 px-4"
+            >
+              <Square className="w-4 h-4 fill-current" />
+              <span>Stop Test</span>
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Main Row: URL & Method */}
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="w-fit space-y-2 shrink-0">
+            <Label htmlFor="method">Method</Label>
+            <Select
               value={config.method}
-              onChange={e => updateField('method', e.target.value)}
+              onValueChange={(val) => updateField('method', val)}
               disabled={isRunning}
             >
-              <option value="GET">GET</option>
-              <option value="POST">POST</option>
-              <option value="PUT">PUT</option>
-              <option value="PATCH">PATCH</option>
-              <option value="DELETE">DELETE</option>
-            </select>
+              <SelectTrigger id="method" className="bg-background/50">
+                <SelectValue placeholder="GET" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="GET">GET</SelectItem>
+                <SelectItem value="POST">POST</SelectItem>
+                <SelectItem value="PUT">PUT</SelectItem>
+                <SelectItem value="PATCH">PATCH</SelectItem>
+                <SelectItem value="DELETE">DELETE</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <div className="form-group" style={{ flex: 1 }}>
-            <label className="form-label" htmlFor="url-input">Target URL</label>
-            <input
-              id="url-input"
-              type="url"
-              className="input-field"
-              placeholder="https://example.com/api/endpoint"
-              value={config.url}
-              onChange={e => updateField('url', e.target.value)}
+          <div className="flex-1 space-y-2 min-w-0">
+            <Label htmlFor="url">Target URL</Label>
+            <div className="relative">
+              <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                id="url"
+                type="url"
+                placeholder="https://example.com/api/v1/resource"
+                className="pl-9 bg-background/50"
+                value={config.url}
+                onChange={e => updateField('url', e.target.value)}
+                disabled={isRunning}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Basic Params Row: VUs, Duration, Use Stages */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-4 rounded-xl bg-muted/30 border border-border/50">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Users className="w-3.5 h-3.5 text-muted-foreground" />
+              <Label htmlFor="vus" className="text-xs font-semibold">Virtual Users (VUs)</Label>
+            </div>
+            <Input
+              id="vus"
+              type="number"
+              className="bg-background/50 h-9"
+              min={1}
+              value={config.vus}
+              onChange={e => updateField('vus', e.target.value)}
               disabled={isRunning}
             />
           </div>
-        </div>
-      </div>
-
-      {/* VUs, Duration */}
-      <div className="config-params-row">
-        <div className="form-group">
-          <label className="form-label" htmlFor="vus-input">Virtual Users (VUs)</label>
-          <input
-            id="vus-input"
-            type="number"
-            className="input-field"
-            min={1}
-            max={10000}
-            value={config.vus}
-            onChange={e => updateField('vus', e.target.value)}
-            disabled={isRunning}
-          />
-        </div>
-        <div className="form-group">
-          <label className="form-label" htmlFor="duration-input">Duration</label>
-          <input
-            id="duration-input"
-            type="text"
-            className="input-field"
-            placeholder="30s, 1m, 5m"
-            value={config.duration}
-            onChange={e => updateField('duration', e.target.value)}
-            disabled={isRunning}
-          />
-        </div>
-        <div className="form-group" style={{ display: 'flex', alignItems: 'flex-end' }}>
-          <button
-            className={`toggle-btn ${config.useStages ? 'active' : ''}`}
-            onClick={() => {
-              updateField('useStages', !config.useStages);
-              if (!config.useStages) setShowStages(true);
-            }}
-            disabled={isRunning}
-            style={{ height: '42px' }}
-          >
-            📈 {config.useStages ? 'Stages ON' : 'Use Stages'}
-          </button>
-        </div>
-      </div>
-
-      {/* Toggle buttons */}
-      <div className="toggle-buttons">
-        <button
-          className={`toggle-btn ${showHeaders ? 'active' : ''}`}
-          onClick={() => setShowHeaders(!showHeaders)}
-        >
-          📋 Headers
-        </button>
-        <button
-          className={`toggle-btn ${showBody ? 'active' : ''}`}
-          onClick={() => setShowBody(!showBody)}
-        >
-          📝 Body
-        </button>
-        <button
-          className={`toggle-btn ${showStages ? 'active' : ''}`}
-          onClick={() => setShowStages(!showStages)}
-        >
-          📊 Stages
-        </button>
-        <button
-          className={`toggle-btn ${showThresholds ? 'active' : ''}`}
-          onClick={() => setShowThresholds(!showThresholds)}
-        >
-          🎯 Thresholds
-        </button>
-      </div>
-
-      {/* Headers */}
-      {showHeaders && (
-        <div className="expandable-section">
-          <div className="expandable-section-title">Request Headers</div>
-          {config.headers.map((h, i) => (
-            <div className="kv-row" key={i}>
-              <input
-                className="input-field"
-                placeholder="Header name"
-                value={h.key}
-                onChange={e => updateHeader(i, 'key', e.target.value)}
-                disabled={isRunning}
-              />
-              <input
-                className="input-field"
-                placeholder="Header value"
-                value={h.value}
-                onChange={e => updateHeader(i, 'value', e.target.value)}
-                disabled={isRunning}
-              />
-              <button
-                className="kv-remove-btn"
-                onClick={() => removeHeader(i)}
-                disabled={isRunning}
-                title="Remove"
-              >×</button>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+              <Label htmlFor="duration" className="text-xs font-semibold">Total Duration</Label>
             </div>
-          ))}
-          <button className="add-row-btn" onClick={addHeader} disabled={isRunning}>
-            + Add Header
-          </button>
+            <Input
+              id="duration"
+              placeholder="30s, 1m, 5m"
+              className="bg-background/50 h-9"
+              value={config.duration}
+              onChange={e => updateField('duration', e.target.value)}
+              disabled={isRunning}
+            />
+          </div>
+          <div className="sm:col-span-2 lg:col-span-2 flex items-center justify-between gap-4 self-end h-9">
+            <div className="space-y-0.5">
+              <Label className="text-xs font-semibold">Execution Mode</Label>
+              <div className="text-[10px] text-muted-foreground hidden sm:block">Toggle between static VUs and ramp-up stages.</div>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1 bg-muted/20 border rounded-full shrink-0">
+              <span
+                className={cn("text-[10px] font-bold cursor-pointer select-none transition-opacity", !config.useStages ? "opacity-100" : "opacity-40")}
+                onClick={() => !isRunning && updateField('useStages', false)}
+              >
+                Static
+              </span>
+              <Switch
+                checked={config.useStages}
+                onCheckedChange={(val) => updateField('useStages', val)}
+                disabled={isRunning}
+              />
+              <span
+                className={cn("text-[10px] font-bold cursor-pointer select-none transition-opacity", config.useStages ? "opacity-100" : "opacity-40")}
+                onClick={() => !isRunning && updateField('useStages', true)}
+              >
+                Stages
+              </span>
+            </div>
+          </div>
         </div>
-      )}
 
-      {/* Body */}
-      {showBody && (
-        <div className="expandable-section">
-          <div className="expandable-section-title">Request Body</div>
-          <textarea
-            className="textarea-field"
-            placeholder='{"key": "value"}'
-            value={config.body}
-            onChange={e => updateField('body', e.target.value)}
-            disabled={isRunning}
-            rows={5}
-          />
-        </div>
-      )}
-
-      {/* Stages */}
-      {showStages && (
-        <div className="expandable-section">
-          <div className="expandable-section-title">Ramp-up Stages</div>
-          {config.stages.map((s, i) => (
-            <div className="stage-row" key={i}>
-              <div className="form-group">
-                <label className="form-label">Duration</label>
-                <input
-                  className="input-field"
-                  placeholder="10s"
-                  value={s.duration}
-                  onChange={e => updateStage(i, 'duration', e.target.value)}
-                  disabled={isRunning}
-                />
+        <Accordion type="multiple" className="w-full">
+          {/* Headers Section */}
+          <AccordionItem value="headers" className="border-border/50">
+            <AccordionTrigger className="hover:no-underline py-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Braces className="w-4 h-4 text-primary" />
+                HTTP Headers
+                {config.headers.filter(h => h.key.trim()).length > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-[10px] h-4">{config.headers.filter(h => h.key.trim()).length}</Badge>
+                )}
               </div>
-              <div className="form-group">
-                <label className="form-label">Target VUs</label>
-                <input
-                  className="input-field"
-                  type="number"
-                  min={0}
-                  value={s.target}
-                  onChange={e => updateStage(i, 'target', parseInt(e.target.value) || 0)}
-                  disabled={isRunning}
-                />
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-4 space-y-3">
+              {config.headers.map((h, i) => (
+                <div className="flex flex-col sm:flex-row gap-2 pb-3 sm:pb-0 border-b sm:border-none last:border-none" key={i}>
+                  <Input
+                    placeholder="Key (e.g. Authorization)"
+                    className="h-9 text-xs w-full sm:w-1/2"
+                    value={h.key}
+                    onChange={e => updateHeader(i, 'key', e.target.value)}
+                    disabled={isRunning}
+                  />
+                  <div className="flex gap-2 w-full sm:w-1/2">
+                    <Input
+                      placeholder="Value (e.g. Bearer ...)"
+                      className="h-9 text-xs flex-1"
+                      value={h.value}
+                      onChange={e => updateHeader(i, 'value', e.target.value)}
+                      disabled={isRunning}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive border sm:border-none"
+                      onClick={() => removeHeader(i)}
+                      disabled={isRunning}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-2 border-dashed"
+                onClick={addHeader}
+                disabled={isRunning}
+              >
+                <Plus className="w-3 h-3" />
+                Add Header
+              </Button>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Body Section */}
+          <AccordionItem value="body" className="border-border/50">
+            <AccordionTrigger className="hover:no-underline py-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="w-4 h-4 text-primary" />
+                Request Body
+                {config.body.trim() && <Badge variant="secondary" className="ml-1 text-[10px] h-4">JSON</Badge>}
               </div>
-              <button
-                className="kv-remove-btn"
-                onClick={() => removeStage(i)}
-                disabled={isRunning}
-                title="Remove"
-                style={{ marginTop: '18px' }}
-              >×</button>
-            </div>
-          ))}
-          <button className="add-row-btn" onClick={addStage} disabled={isRunning}>
-            + Add Stage
-          </button>
-        </div>
-      )}
-
-      {/* Thresholds */}
-      {showThresholds && (
-        <div className="expandable-section">
-          <div className="expandable-section-title">Thresholds</div>
-          {config.thresholds.map((t, i) => (
-            <div className="kv-row" key={i}>
-              <input
-                className="input-field"
-                placeholder="e.g. http_req_duration"
-                value={t.key}
-                onChange={e => updateThreshold(i, 'key', e.target.value)}
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-4">
+              <Textarea
+                placeholder='{"key": "value"}'
+                className="font-mono text-xs bg-muted/20 min-h-[120px]"
+                value={config.body}
+                onChange={e => updateField('body', e.target.value)}
                 disabled={isRunning}
               />
-              <input
-                className="input-field"
-                placeholder="e.g. p(95)<500"
-                value={t.value}
-                onChange={e => updateThreshold(i, 'value', e.target.value)}
-                disabled={isRunning}
-              />
-              <button
-                className="kv-remove-btn"
-                onClick={() => removeThreshold(i)}
-                disabled={isRunning}
-                title="Remove"
-              >×</button>
-            </div>
-          ))}
-          <button className="add-row-btn" onClick={addThreshold} disabled={isRunning}>
-            + Add Threshold
-          </button>
-        </div>
-      )}
+            </AccordionContent>
+          </AccordionItem>
 
-      {/* Action Buttons */}
-      <div className="action-buttons">
-        <button
-          id="start-test-btn"
-          className="btn btn-primary"
-          onClick={handleSubmit}
-          disabled={isRunning || !config.url.trim() || !config.vus || Number(config.vus) <= 0}
-        >
-          ▶ Start Test
-        </button>
-        <button
-          id="stop-test-btn"
-          className="btn btn-danger"
-          onClick={onStopTest}
-          disabled={!isRunning}
-        >
-          ⏹ Stop Test
-        </button>
-      </div>
-    </section>
+          {/* Stages Section (Only relevant if useStages is true, but we show it anyway) */}
+          <AccordionItem value="stages" className="border-border/50">
+            <AccordionTrigger className="hover:no-underline py-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-left">
+                <Layers className="w-4 h-4 text-primary" />
+                Ramp-up Stages
+                {config.useStages && <Badge variant="default" className="ml-1 text-[10px] bg-green-500/10 text-green-500 hover:bg-green-500/10 h-4 border-green-500/20 uppercase tracking-tighter">Enabled</Badge>}
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-4 space-y-3">
+              {!config.useStages && (
+                <p className="text-[11px] text-muted-foreground mb-2 italic px-1">Note: Execution Mode must be set to 'Stages' to use these.</p>
+              )}
+              <ScrollArea className={'h-[280px] pr-4'}>
+                <div className="space-y-3 pb-2">
+                  {config.stages.map((s, i) => (
+                    <div className="grid grid-cols-2 gap-2 relative group pr-10" key={i}>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase text-muted-foreground pl-1">Stage Duration</Label>
+                        <Input
+                          placeholder="10s"
+                          className="h-9 text-xs"
+                          value={s.duration}
+                          onChange={e => updateStage(i, 'duration', e.target.value)}
+                          disabled={isRunning}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase text-muted-foreground pl-1">Target VUs</Label>
+                        <Input
+                          type="number"
+                          className="h-9 text-xs"
+                          value={s.target}
+                          onChange={e => updateStage(i, 'target', e.target.value)}
+                          disabled={isRunning}
+                        />
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-0 bottom-0 h-9 w-9 text-muted-foreground hover:text-destructive"
+                        onClick={() => removeStage(i)}
+                        disabled={isRunning}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-2 border-dashed"
+                onClick={addStage}
+                disabled={isRunning}
+              >
+                <Plus className="w-3 h-3" />
+                Add Stage
+              </Button>
+            </AccordionContent>
+          </AccordionItem>
+
+          {/* Thresholds Section */}
+          <AccordionItem value="thresholds" className="border-b-0">
+            <AccordionTrigger className="hover:no-underline py-3">
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Target className="w-4 h-4 text-primary" />
+                Test Thresholds
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="pt-2 pb-2 space-y-3">
+              <ScrollArea className={'h-[240px] pr-4'}>
+                <div className="space-y-3 pb-2">
+                  {config.thresholds.map((t, i) => (
+                    <div className="flex flex-col sm:flex-row gap-2 pb-3 sm:pb-0 border-b sm:border-none last:border-none" key={i}>
+                      <Input
+                        placeholder="Metric (e.g. http_req_duration)"
+                        className="h-9 text-xs w-full sm:w-[55%]"
+                        value={t.key}
+                        onChange={e => updateThreshold(i, 'key', e.target.value)}
+                        disabled={isRunning}
+                      />
+                      <div className="flex gap-2 w-full sm:w-[45%]">
+                        <Input
+                          placeholder="Rule (e.g. p(95)<500)"
+                          className="h-9 text-xs flex-1"
+                          value={t.value}
+                          onChange={e => updateThreshold(i, 'value', e.target.value)}
+                          disabled={isRunning}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 shrink-0 text-muted-foreground hover:text-destructive border sm:border-none"
+                          onClick={() => removeThreshold(i)}
+                          disabled={isRunning}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs gap-2 border-dashed"
+                onClick={addThreshold}
+                disabled={isRunning}
+              >
+                <Plus className="w-3 h-3" />
+                Add Threshold
+              </Button>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </CardContent>
+    </Card >
   );
 }

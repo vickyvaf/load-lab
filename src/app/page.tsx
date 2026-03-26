@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import TestConfigPanel from "@/components/TestConfigPanel";
 import StatisticsPanel from "@/components/StatisticsPanel";
 import LogsPanel from "@/components/LogsPanel";
+import { cn } from "@/lib/utils";
 
 import { TestConfig, Metrics, LogEntry } from "@/types";
 
@@ -108,7 +109,9 @@ export default function Home() {
           ),
           body: config.body || "",
           stages: config.useStages
-            ? config.stages.filter((s) => s.duration && s.target > 0)
+            ? config.stages
+                .filter((s) => s.duration && (Number(s.target) > 0))
+                .map((s) => ({ ...s, target: Number(s.target) }))
             : [],
           thresholds: config.thresholds.reduce(
             (acc, t) => {
@@ -176,22 +179,35 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="app-container">
-      <header className="app-header">
-        <div className="app-logo">
-          <div className="app-logo-icon">🚀</div>
+    <div className="container mx-auto px-4 py-8 md:px-6 lg:px-8 max-w-7xl space-y-8">
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b">
+        <div className="flex items-center gap-3 sm:gap-4">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary text-primary-foreground rounded-lg flex items-center justify-center text-xl sm:text-2xl shadow-lg ring-1 ring-primary/20">
+            🚀
+          </div>
           <div>
-            <h1>LoadLab</h1>
-            <div className="app-logo-subtitle">K6 Load Testing</div>
+            <h1 className="text-3xl font-extrabold tracking-tight">LoadLab</h1>
+            <p className="text-sm text-muted-foreground font-medium uppercase tracking-wider">
+              K6 Load Testing Engine
+            </p>
           </div>
         </div>
-        <div className="header-badge">
-          <span className={`status-dot ${isRunning ? "running" : ""}`}></span>
-          {isRunning ? "Test Running" : "Idle"}
+        <div className="flex items-center gap-3 bg-muted/50 px-4 py-2 rounded-full border border-border/50">
+          <span
+            className={cn(
+              "w-2.5 h-2.5 rounded-full transition-shadow duration-1000",
+              isRunning
+                ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)] animate-pulse"
+                : "bg-muted-foreground",
+            )}
+          ></span>
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            {isRunning ? "Test Running" : "Idle"}
+          </span>
         </div>
       </header>
 
-      <main>
+      <main className="space-y-8">
         <TestConfigPanel
           onStartTest={handleStartTest}
           onStopTest={handleStopTest}
@@ -201,7 +217,18 @@ export default function Home() {
         <LogsPanel logs={logs} onClear={handleClearLogs} />
       </main>
 
-      {toast && <div className={`toast ${toast.type}`}>{toast.message}</div>}
+      {toast && (
+        <div
+          className={cn(
+            "fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 px-6 py-3 rounded-xl text-sm font-semibold shadow-2xl animate-in fade-in slide-in-from-bottom-4 transition-all z-50",
+            toast.type === "success"
+              ? "bg-primary text-primary-foreground"
+              : "bg-destructive text-destructive-foreground",
+          )}
+        >
+          {toast.message}
+        </div>
+      )}
     </div>
   );
 }

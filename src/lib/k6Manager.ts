@@ -83,23 +83,23 @@ function generateK6Script(config: TestConfig): string {
   }
 
   return `
-import http from 'k6/http';
-import { check } from 'k6';
+    import http from 'k6/http';
+    import { check } from 'k6';
 
-export const options = ${JSON.stringify(optionsObj, null, 2)};
+    export const options = ${JSON.stringify(optionsObj, null, 2)};
 
-const url = ${JSON.stringify(config.url)};
-const headers = ${headersStr};
-${bodySection}
+    const url = ${JSON.stringify(config.url)};
+    const headers = ${headersStr};
+    ${bodySection}
 
-export default function () {
-  const res = ${requestCall};
+    export default function () {
+      const res = ${requestCall};
 
-  check(res, {
-    'status is 2xx': (r) => r.status >= 200 && r.status < 300,
-  });
-}
-`;
+      check(res, {
+        'status is 2xx': (r) => r.status >= 200 && r.status < 300,
+      });
+    }
+  `;
 }
 
 export function startTest(config: TestConfig): { testId: string } {

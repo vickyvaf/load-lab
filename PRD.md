@@ -100,7 +100,8 @@ Real-time counter cards yang menampilkan metrik hasil test:
 | Layer | Technology |
 |-------|------------|
 | **Frontend** | Next.js (React) + TypeScript |
-| **Styling** | Vanilla CSS (dark theme, glassmorphism) |
+| **Styling** | Shadcn UI (Tailwind CSS) |
+| **Package Manager** | pnpm v9+ |
 | **Backend** | Next.js API Routes |
 | **Load Testing Engine** | K6 (dijalankan sebagai child process di server) |
 | **Real-time Communication** | Server-Sent Events (SSE) |
