@@ -109,7 +109,7 @@ export default function Home() {
         try {
           const data = JSON.parse(event.data);
           setIsRunning(false);
-          setStartTime(null); // Reset timer
+          // Don't reset startTime here so the user can see the final test duration
           showToast(
             data.status === "completed"
               ? "Test finished!"
@@ -207,13 +207,7 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ testId }),
       });
-      setIsRunning(false);
-      setStartTime(null); // Reset timer
-      showToast("Test stopped", "success");
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-        eventSourceRef.current = null;
-      }
+      showToast("Stopping test...", "success");
     } catch {
       showToast("Failed to stop test", "error");
     }

@@ -33,6 +33,8 @@ interface TestProcess {
   config: TestConfig;
   metrics: TestMetrics;
   scriptPath: string;
+  startTime: number;
+  lastEmitTime: number;
 }
 
 // Use globalThis to persist the Map across HMR restarts and between different API route handlers in Next.js
@@ -125,7 +127,7 @@ export function startTest(config: TestConfig): { testId: string } {
   };
 
   // Spawn K6 with JSON summary output
-  const k6Process = spawn('k6', ['run', '--out', 'json=-', scriptPath], {
+  const k6Process = spawn('k6', ['run', '--out', 'json=-', '--quiet', '--no-usage-report', scriptPath], {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env },
   });
@@ -136,6 +138,8 @@ export function startTest(config: TestConfig): { testId: string } {
     config,
     metrics,
     scriptPath,
+    startTime: Date.now(),
+    lastEmitTime: 0,
   };
 
   activeTests.set(testId, testProcess);
@@ -207,6 +211,7 @@ export function startTest(config: TestConfig): { testId: string } {
       message: message,
     });
 
+    emitter.emit('metrics', { ...testProcess.metrics });
     emitter.emit('done', {
       status: status,
     });
@@ -269,15 +274,10 @@ function processK6JsonLine(testId: string, data: Record<string, unknown>) {
     }
 
     if (metric === 'http_reqs') {
-      // Calculate req/s from elapsed time
-      const timestamp = pointData.time as string;
-      if (timestamp && test.metrics.totalRequests > 0) {
-        try {
-          const elapsed = (new Date(timestamp).getTime() - Date.now()) / 1000;
-          if (Math.abs(elapsed) > 0) {
-            test.metrics.reqPerSec = test.metrics.totalRequests / Math.abs(elapsed);
-          }
-        } catch { /* ignore */ }
+      // Calculate req/s from start time
+      const elapsed = (Date.now() - test.startTime) / 1000;
+      if (elapsed > 0) {
+        test.metrics.reqPerSec = test.metrics.totalRequests / elapsed;
       }
     }
 
@@ -287,8 +287,12 @@ function processK6JsonLine(testId: string, data: Record<string, unknown>) {
       }
     }
 
-    // Emit metrics update (throttled: emit on every data point)
-    test.emitter.emit('metrics', { ...test.metrics });
+    // Emit metrics update (throttled to max 5 times per second)
+    const now = Date.now();
+    if (now - test.lastEmitTime > 200) {
+      test.lastEmitTime = now;
+      test.emitter.emit('metrics', { ...test.metrics });
+    }
   }
 }
 
