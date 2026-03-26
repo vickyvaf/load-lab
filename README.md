@@ -3,8 +3,7 @@
 **LoadLab** is a modern web application that provides a powerful visual interface for running **K6** load tests directly from your browser. It eliminates the need to write complex K6 scripts manually, allowing developers and QA engineers to configure, execute, and monitor performance tests through an intuitive dashboard.
 
 ## Preview
-<img width="1007" height="736" alt="Screenshot 2026-03-26 at 14 58 58" src="https://github.com/user-attachments/assets/51241d45-8471-448a-998e-975e48f806af" />
-
+![Screenshot 2026-03-26 at 17 22 34](https://github.com/user-attachments/assets/069d26a7-d7b0-4ff3-90bd-226413faff58)
 
 ---
 
