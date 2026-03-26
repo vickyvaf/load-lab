@@ -169,7 +169,11 @@ export function startTest(config: TestConfig): { testId: string } {
     for (const line of lines) {
       let level: 'info' | 'warn' | 'error' = 'info';
       if (line.toLowerCase().includes('warn')) level = 'warn';
-      if (line.toLowerCase().includes('error') || line.toLowerCase().includes('fail')) level = 'error';
+      if (line.toLowerCase().includes('error') || line.toLowerCase().includes('fail')) {
+        level = 'error';
+        // Downgrade threshold failures to warnings so they don't look like system errors
+        if (line.toLowerCase().includes('thresholds')) level = 'warn';
+      }
 
       emitter.emit('log', {
         timestamp: new Date().toISOString(),
@@ -180,14 +184,31 @@ export function startTest(config: TestConfig): { testId: string } {
   });
 
   k6Process.on('close', (code) => {
+    let level: 'info' | 'warn' | 'error' = 'info';
+    let message = `K6 process exited with code ${code}`;
+    let status: 'completed' | 'failed' = 'completed';
+
+    if (code === 0) {
+      message = 'K6 test finished successfully';
+      level = 'info';
+      status = 'completed';
+    } else if (code === 99) {
+      message = 'K6 test finished (thresholds failed)';
+      level = 'info';
+      status = 'completed'; // Use completed to avoid error styling as requested
+    } else {
+      level = 'error';
+      status = 'failed';
+    }
+
     emitter.emit('log', {
       timestamp: new Date().toISOString(),
-      level: code === 0 ? 'info' : 'error',
-      message: `K6 process exited with code ${code}`,
+      level: level,
+      message: message,
     });
 
     emitter.emit('done', {
-      status: code === 0 ? 'completed' : 'failed',
+      status: status,
     });
 
     // Cleanup

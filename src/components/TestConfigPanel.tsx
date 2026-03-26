@@ -18,9 +18,16 @@ interface TestConfigPanelProps {
   onStartTest: (config: TestConfig) => void;
   onStopTest: () => void;
   isRunning: boolean;
+  timeLeft?: number;
+  progressPercent?: number;
 }
 
-export default function TestConfigPanel({ onStartTest, onStopTest, isRunning }: TestConfigPanelProps) {
+export default function TestConfigPanel({ onStartTest, onStopTest, isRunning, timeLeft, progressPercent }: TestConfigPanelProps) {
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
   const [config, setConfig] = useState<TestConfig>({
     url: '',
     method: 'GET',
@@ -78,7 +85,7 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning }: 
   return (
     <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
       <CardHeader className="pb-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-4">
           <div className="space-y-1">
             <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <Settings2 className="w-4 h-4" />
@@ -88,33 +95,50 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning }: 
               Configure parameters for your K6 load test scenario.
             </CardDescription>
           </div>
-          <div className="flex gap-2 w-full sm:w-auto">
+          <div className="grid grid-cols-2 gap-2 w-full 2xl:w-auto">
             <Button
               size="sm"
               onClick={handleSubmit}
               disabled={isRunning || !config.url.trim() || !config.vus || Number(config.vus) <= 0}
-              className="flex-1 sm:flex-none gap-2 px-4 shadow-sm"
+              className="gap-2 px-4 shadow-sm"
             >
               <Play className="w-4 h-4 fill-current" />
-              <span>Start Test</span>
+              <span className="truncate">Start Test</span>
             </Button>
             <Button
               size="sm"
               variant="destructive"
               onClick={onStopTest}
               disabled={!isRunning}
-              className="flex-1 sm:flex-none gap-2 px-4"
+              className="gap-2 px-4"
             >
               <Square className="w-4 h-4 fill-current" />
-              <span>Stop Test</span>
+              <span className="truncate">Stop Test</span>
             </Button>
           </div>
         </div>
+        {isRunning && timeLeft !== undefined && progressPercent !== undefined && (
+          <div className="mt-4 pt-4 border-t border-border/50 animate-in fade-in slide-in-from-top-1">
+            <div className="flex justify-between items-end mb-2">
+              <div className="space-y-0.5">
+                <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">Time Remaining</p>
+                <p className="text-xl font-bold tabular-nums text-primary">{formatTime(timeLeft)}</p>
+              </div>
+              <p className="text-xs font-bold text-muted-foreground">{Math.round(progressPercent)}%</p>
+            </div>
+            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden shadow-inner">
+              <div 
+                className="h-full bg-primary transition-all duration-1000 ease-linear shadow-primary/40"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Main Row: URL & Method */}
-        <div className="flex flex-col md:flex-row gap-4">
-          <div className="w-fit space-y-2 shrink-0">
+        <div className="flex flex-col xl:flex-row gap-4">
+          <div className="w-full xl:w-fit space-y-2 shrink-0">
             <Label htmlFor="method">Method</Label>
             <Select
               value={config.method}
@@ -151,7 +175,7 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning }: 
         </div>
 
         {/* Basic Params Row: VUs, Duration, Use Stages */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 p-4 rounded-xl bg-muted/30 border border-border/50">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2 gap-4 p-4 rounded-xl bg-muted/30 border border-border/50">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
               <Users className="w-3.5 h-3.5 text-muted-foreground" />
@@ -181,10 +205,10 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning }: 
               disabled={isRunning}
             />
           </div>
-          <div className="sm:col-span-2 lg:col-span-2 flex items-center justify-between gap-4 self-end h-9">
+          <div className="md:col-span-2 xl:col-span-1 2xl:col-span-2 flex items-center justify-between gap-4 pt-2 border-t border-border/50 md:border-none md:pt-0">
             <div className="space-y-0.5">
               <Label className="text-xs font-semibold">Execution Mode</Label>
-              <div className="text-[10px] text-muted-foreground hidden sm:block">Toggle between static VUs and ramp-up stages.</div>
+              <div className="text-[10px] text-muted-foreground">Toggle between static VUs and ramp-up stages.</div>
             </div>
             <div className="flex items-center gap-2 px-3 py-1 bg-muted/20 border rounded-full shrink-0">
               <span
@@ -296,7 +320,7 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning }: 
               {!config.useStages && (
                 <p className="text-[11px] text-muted-foreground mb-2 italic px-1">Note: Execution Mode must be set to 'Stages' to use these.</p>
               )}
-              <ScrollArea className={'h-[280px] pr-4'}>
+              <ScrollArea className={'h-[280px] pr-4'} type="always">
                 <div className="space-y-3 pb-2">
                   {config.stages.map((s, i) => (
                     <div className="grid grid-cols-2 gap-2 relative group pr-10" key={i}>
@@ -355,7 +379,7 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning }: 
               </div>
             </AccordionTrigger>
             <AccordionContent className="pt-2 pb-2 space-y-3">
-              <ScrollArea className={'h-[240px] pr-4'}>
+              <ScrollArea className={'h-[240px] pr-4'} type="always">
                 <div className="space-y-3 pb-2">
                   {config.thresholds.map((t, i) => (
                     <div className="flex flex-col sm:flex-row gap-2 pb-3 sm:pb-0 border-b sm:border-none last:border-none" key={i}>
