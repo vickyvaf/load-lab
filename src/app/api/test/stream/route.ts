@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { getTestEmitter, getTestMetrics } from '@/lib/k6Manager';
+import { getTestEmitter, getTestMetrics, getTestLogs } from '@/lib/k6Manager';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +25,14 @@ export async function GET(request: NextRequest) {
       if (currentMetrics) {
         controller.enqueue(
           encoder.encode(`event: metrics\ndata: ${JSON.stringify(currentMetrics)}\n\n`)
+        );
+      }
+
+      // Send existing logs immediately
+      const initialLogs = getTestLogs(testId);
+      for (const log of initialLogs) {
+        controller.enqueue(
+          encoder.encode(`event: log\ndata: ${JSON.stringify(log)}\n\n`)
         );
       }
 

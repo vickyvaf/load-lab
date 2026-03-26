@@ -27,11 +27,18 @@ export interface TestMetrics {
   failedChecks: number;
 }
 
+interface LogEntry {
+  timestamp: string;
+  level: 'info' | 'warn' | 'error';
+  message: string;
+}
+
 interface TestProcess {
   process: ChildProcess;
   emitter: EventEmitter;
   config: TestConfig;
   metrics: TestMetrics;
+  logs: LogEntry[]; // Store logs for SSE replay
   scriptPath: string;
   startTime: number;
   lastEmitTime: number;
@@ -127,7 +134,7 @@ export function startTest(config: TestConfig): { testId: string } {
   };
 
   // Spawn K6 with JSON summary output
-  const k6Process = spawn('k6', ['run', '--out', 'json=-', '--quiet', '--no-usage-report', scriptPath], {
+  const k6Process = spawn('k6', ['run', '--out', 'json=-', '--no-usage-report', scriptPath], {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: { ...process.env },
   });
@@ -137,12 +144,37 @@ export function startTest(config: TestConfig): { testId: string } {
     emitter,
     config,
     metrics,
+    logs: [],
     scriptPath,
     startTime: Date.now(),
     lastEmitTime: 0,
   };
 
   activeTests.set(testId, testProcess);
+
+  function addLog(level: 'info' | 'warn' | 'error', message: string) {
+    const entry: LogEntry = {
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+    };
+    testProcess.logs.push(entry);
+    // Limit log history to avoid memory leaks
+    if (testProcess.logs.length > 1000) {
+      testProcess.logs.shift();
+    }
+    emitter.emit('log', entry);
+  }
+
+  // Initial logs
+  addLog('info', `Test initialized with ID: ${testId}`);
+  addLog('info', `Target URL: ${config.method} ${config.url}`);
+
+  if (config.stages && config.stages.length > 0) {
+    addLog('info', `Execution Mode: Stages (${config.stages.length} stages)`);
+  } else {
+    addLog('info', `Execution Mode: Static (${config.vus} VUs for ${config.duration})`);
+  }
 
   // Parse K6 JSON output (each line is a JSON object)
   let buffer = '';
@@ -158,19 +190,19 @@ export function startTest(config: TestConfig): { testId: string } {
         processK6JsonLine(testId, data);
       } catch {
         // Not JSON — emit as log
-        emitter.emit('log', {
-          timestamp: new Date().toISOString(),
-          level: 'info',
-          message: line,
-        });
+        if (line.trim()) {
+          addLog('info', line);
+        }
       }
     }
   });
 
   // Capture stderr as logs
   k6Process.stderr?.on('data', (chunk: Buffer) => {
-    const lines = chunk.toString().split('\n').filter(l => l.trim());
+    const lines = chunk.toString().split('\n');
     for (const line of lines) {
+      if (!line.trim()) continue;
+      
       let level: 'info' | 'warn' | 'error' = 'info';
       if (line.toLowerCase().includes('warn')) level = 'warn';
       if (line.toLowerCase().includes('error') || line.toLowerCase().includes('fail')) {
@@ -179,11 +211,7 @@ export function startTest(config: TestConfig): { testId: string } {
         if (line.toLowerCase().includes('thresholds')) level = 'warn';
       }
 
-      emitter.emit('log', {
-        timestamp: new Date().toISOString(),
-        level,
-        message: line,
-      });
+      addLog(level, line);
     }
   });
 
@@ -205,11 +233,7 @@ export function startTest(config: TestConfig): { testId: string } {
       status = 'failed';
     }
 
-    emitter.emit('log', {
-      timestamp: new Date().toISOString(),
-      level: level,
-      message: message,
-    });
+    addLog(level, message);
 
     emitter.emit('metrics', { ...testProcess.metrics });
     emitter.emit('done', {
@@ -224,11 +248,7 @@ export function startTest(config: TestConfig): { testId: string } {
   });
 
   k6Process.on('error', (err) => {
-    emitter.emit('log', {
-      timestamp: new Date().toISOString(),
-      level: 'error',
-      message: `K6 process error: ${err.message}`,
-    });
+    addLog('error', `K6 process error: ${err.message}`);
     emitter.emit('done', { status: 'error' });
   });
 
@@ -256,8 +276,22 @@ function processK6JsonLine(testId: string, data: Record<string, unknown>) {
         test.metrics.success += value;
       } else if (status >= 400 && status < 500) {
         test.metrics.clientErrors += value;
+        const entry: LogEntry = {
+          timestamp: new Date().toISOString(),
+          level: 'warn',
+          message: `Client Error (${status}) on ${test.config.url}`,
+        };
+        test.logs.push(entry);
+        test.emitter.emit('log', entry);
       } else if (status >= 500) {
         test.metrics.serverErrors += value;
+        const entry: LogEntry = {
+          timestamp: new Date().toISOString(),
+          level: 'error',
+          message: `Server Error (${status}) on ${test.config.url}`,
+        };
+        test.logs.push(entry);
+        test.emitter.emit('log', entry);
       }
     }
 
@@ -320,4 +354,9 @@ export function getTestEmitter(testId: string): EventEmitter | null {
 export function getTestMetrics(testId: string): TestMetrics | null {
   const test = activeTests.get(testId);
   return test?.metrics || null;
+}
+
+export function getTestLogs(testId: string): LogEntry[] {
+  const test = activeTests.get(testId);
+  return test?.logs || [];
 }

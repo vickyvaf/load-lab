@@ -254,14 +254,15 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-        <div className="lg:col-span-5 xl:col-span-4 lg:sticky lg:top-8">
+      <main className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div className="lg:col-span-5 xl:col-span-4 flex">
           <TestConfigPanel
             onStartTest={handleStartTest}
             onStopTest={handleStopTest}
             isRunning={isRunning}
             timeLeft={timeLeft}
             progressPercent={progressPercent}
+            className="h-full"
           />
         </div>
         <div className="lg:col-span-7 xl:col-span-8 space-y-4">

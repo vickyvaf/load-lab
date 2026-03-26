@@ -20,9 +20,10 @@ interface TestConfigPanelProps {
   isRunning: boolean;
   timeLeft?: number;
   progressPercent?: number;
+  className?: string;
 }
 
-export default function TestConfigPanel({ onStartTest, onStopTest, isRunning, timeLeft, progressPercent }: TestConfigPanelProps) {
+export default function TestConfigPanel({ onStartTest, onStopTest, isRunning, timeLeft, progressPercent, className }: TestConfigPanelProps) {
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -83,9 +84,9 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning, ti
   };
 
   return (
-    <Card className="border-border/50 bg-card/50 backdrop-blur-sm">
+    <Card className={cn("border-border/50 bg-card/50 backdrop-blur-sm flex flex-col", className)}>
       <CardHeader className="pb-4">
-        <div className="flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-4">
+        <div className="flex flex-col gap-4">
           <div className="space-y-1">
             <CardTitle className="text-sm font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
               <Settings2 className="w-4 h-4" />
@@ -95,25 +96,25 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning, ti
               Configure parameters for your K6 load test scenario.
             </CardDescription>
           </div>
-          <div className="grid grid-cols-2 gap-2 w-full 2xl:w-auto">
+          <div className="flex items-center gap-2 w-full shrink-0">
             <Button
               size="sm"
               onClick={handleSubmit}
               disabled={isRunning || !config.url.trim() || !config.vus || Number(config.vus) <= 0}
-              className="gap-2 px-4 shadow-sm"
+              className="flex-1 gap-2 px-4 shadow-sm h-9"
             >
-              <Play className="w-4 h-4 fill-current" />
-              <span className="truncate">Start Test</span>
+              <Play className="w-3.5 h-3.5 fill-current" />
+              <span className="whitespace-nowrap">Start Test</span>
             </Button>
             <Button
               size="sm"
               variant="destructive"
               onClick={onStopTest}
               disabled={!isRunning}
-              className="gap-2 px-4"
+              className="flex-1 gap-2 px-4 h-9"
             >
-              <Square className="w-4 h-4 fill-current" />
-              <span className="truncate">Stop Test</span>
+              <Square className="w-3.5 h-3.5 fill-current" />
+              <span className="whitespace-nowrap">Stop Test</span>
             </Button>
           </div>
         </div>
@@ -135,7 +136,7 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning, ti
           </div>
         )}
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 flex-1 flex flex-col">
         {/* Main Row: URL & Method */}
         <div className="flex flex-col xl:flex-row gap-4">
           <div className="w-full xl:w-fit space-y-2 shrink-0">
@@ -232,7 +233,7 @@ export default function TestConfigPanel({ onStartTest, onStopTest, isRunning, ti
           </div>
         </div>
 
-        <Accordion type="multiple" className="w-full">
+        <Accordion type="multiple" className="w-full mt-auto">
           {/* Headers Section */}
           <AccordionItem value="headers" className="border-border/50">
             <AccordionTrigger className="hover:no-underline py-3">
